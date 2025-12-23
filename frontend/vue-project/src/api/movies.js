@@ -13,9 +13,9 @@ export const movieAPI = {
     return axios.get(`/movies/genre/${genre}/`, { params: { page } })
   },
 
-  // 영화 상세
-  getMovieDetail(movieId) {
-    return axios.get(`/movies/${movieId}/`)
+  // 영화 상세 정보 (TMDB ID)
+  getMovieDetail(tmdbId) {
+    return axios.get(`/movies/detail/${tmdbId}/`)
   },
 
   // 찜하기 토글

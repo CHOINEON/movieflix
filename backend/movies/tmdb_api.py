@@ -27,14 +27,6 @@ def get_popular_movies(page=1):
 def get_movies_by_genre(genre_id, page=1):
     """
     장르별 영화 가져오기
-    genre_id:
-    - 28: 액션
-    - 35: 코미디
-    - 10749: 로맨스
-    - 53: 스릴러
-    - 14: 판타지
-    - 878: SF
-    - 16: 애니메이션
     """
     url = "https://api.themoviedb.org/3/discover/movie"
     params = {
@@ -56,9 +48,58 @@ def get_movies_by_genre(genre_id, page=1):
 
 def get_movie_detail(movie_id):
     """
-    영화 상세 정보 가져오기
+    영화 상세 정보 가져오기 (TMDB ID)
+    예고편과 출연진 정보 포함
     """
     url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+    params = {
+        'api_key': settings.TMDB_API_KEY,
+        'language': 'ko-KR',
+        'append_to_response': 'videos,credits'  # 예고편과 출연진 정보 포함
+    }
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"TMDB API 에러: {e}")
+        return None
+
+
+def get_movie_videos(movie_id):
+    """
+    영화 예고편 가져오기
+    """
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos"
+    params = {
+        'api_key': settings.TMDB_API_KEY,
+        'language': 'ko-KR'
+    }
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        # 한국어 예고편이 없으면 영어 예고편 가져오기
+        if not data.get('results'):
+            params['language'] = 'en-US'
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+        
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"TMDB API 에러: {e}")
+        return None
+
+
+def get_movie_credits(movie_id):
+    """
+    영화 출연진 및 제작진 정보 가져오기
+    """
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits"
     params = {
         'api_key': settings.TMDB_API_KEY,
         'language': 'ko-KR'

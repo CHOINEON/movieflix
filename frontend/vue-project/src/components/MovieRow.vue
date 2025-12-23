@@ -2,37 +2,37 @@
 
 <template>
   <div class="movie-row">
-    <h2 class="row-title">{{ title }}</h2>
+    <h2 class="row-title" :title="title">{{ title }}</h2>
     
-    <div class="row-container">
+    <div class="movies-slider">
       <button 
-        v-if="showLeftArrow"
-        class="scroll-btn left"
+        class="slider-btn prev" 
         @click="scrollLeft"
+        v-show="canScrollLeft"
       >
-        ‹
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
       </button>
-      
-      <div 
-        class="movies-list" 
-        ref="moviesListRef"
-        @scroll="handleScroll"
-      >
+
+      <div class="movies-container" ref="container" @scroll="updateScrollState">
         <MovieCard
           v-for="movie in movies"
           :key="movie.id"
           :movie="movie"
-          @click="handleMovieClick"
+          @movie-click="handleMovieClick"
           @favorite-toggled="handleFavoriteToggled"
         />
       </div>
-      
+
       <button 
-        v-if="showRightArrow"
-        class="scroll-btn right"
+        class="slider-btn next" 
         @click="scrollRight"
+        v-show="canScrollRight"
       >
-        ›
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+        </svg>
       </button>
     </div>
   </div>
@@ -54,58 +54,60 @@ export default {
     },
     movies: {
       type: Array,
-      default: () => []
+      required: true
     }
   },
   emits: ['movie-click', 'favorite-toggled'],
   setup(props, { emit }) {
-    const moviesListRef = ref(null)
-    const showLeftArrow = ref(false)
-    const showRightArrow = ref(true)
+    const container = ref(null)
+    const canScrollLeft = ref(false)
+    const canScrollRight = ref(false)
 
-    const handleScroll = () => {
-      if (!moviesListRef.value) return
+    const updateScrollState = () => {
+      if (!container.value) return
       
-      const { scrollLeft, scrollWidth, clientWidth } = moviesListRef.value
-      showLeftArrow.value = scrollLeft > 0
-      showRightArrow.value = scrollLeft < scrollWidth - clientWidth - 10
+      const { scrollLeft, scrollWidth, clientWidth } = container.value
+      canScrollLeft.value = scrollLeft > 0
+      canScrollRight.value = scrollLeft < scrollWidth - clientWidth - 10
     }
 
     const scrollLeft = () => {
-      if (!moviesListRef.value) return
-      moviesListRef.value.scrollBy({
-        left: -moviesListRef.value.clientWidth,
-        behavior: 'smooth'
-      })
+      if (container.value) {
+        container.value.scrollBy({ left: -800, behavior: 'smooth' })
+      }
     }
 
     const scrollRight = () => {
-      if (!moviesListRef.value) return
-      moviesListRef.value.scrollBy({
-        left: moviesListRef.value.clientWidth,
-        behavior: 'smooth'
-      })
+      if (container.value) {
+        container.value.scrollBy({ left: 800, behavior: 'smooth' })
+      }
     }
 
     const handleMovieClick = (movie) => {
+      console.log('📺 MovieRow에서 영화 클릭:', movie)
       emit('movie-click', movie)
     }
 
     const handleFavoriteToggled = (data) => {
+      console.log('❤️ MovieRow에서 찜하기:', data)
       emit('favorite-toggled', data)
     }
 
     onMounted(() => {
-      handleScroll()
+      updateScrollState()
+      
+      if (container.value) {
+        container.value.addEventListener('scroll', updateScrollState)
+      }
     })
 
     return {
-      moviesListRef,
-      showLeftArrow,
-      showRightArrow,
-      handleScroll,
+      container,
+      canScrollLeft,
+      canScrollRight,
       scrollLeft,
       scrollRight,
+      updateScrollState,
       handleMovieClick,
       handleFavoriteToggled
     }
@@ -116,88 +118,83 @@ export default {
 <style scoped>
 .movie-row {
   margin-bottom: 40px;
+  position: relative;
+  padding: 0 50px;
 }
 
 .row-title {
   font-size: 20px;
   font-weight: 700;
   color: #e5e5e5;
-  margin: 0 0 16px 50px;
+  margin: 0 0 16px 0;
+  padding-left: 4px;
 }
 
-.row-container {
+.movies-slider {
   position: relative;
-  padding: 0 50px;
 }
 
-.movies-list {
+.movies-container {
   display: flex;
   gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-behavior: smooth;
-  padding: 4px 0;
-  
-  /* 스크롤바 숨기기 */
+  padding: 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.movies-list::-webkit-scrollbar {
+.movies-container::-webkit-scrollbar {
   display: none;
 }
 
-.movies-list > * {
+.movies-container > * {
+  flex: 0 0 auto;
   width: 200px;
-  flex-shrink: 0;
 }
 
-.scroll-btn {
+/* 슬라이더 버튼 */
+.slider-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   width: 50px;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.5);
   border: none;
   color: white;
-  font-size: 40px;
   cursor: pointer;
   z-index: 10;
-  transition: background 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s;
 }
 
-.scroll-btn:hover {
-  background: rgba(0, 0, 0, 0.9);
+.slider-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
-.scroll-btn.left {
+.slider-btn.prev {
   left: 0;
 }
 
-.scroll-btn.right {
+.slider-btn.next {
   right: 0;
 }
 
 @media (max-width: 768px) {
-  .row-title {
-    margin-left: 20px;
-    font-size: 18px;
-  }
-  
-  .row-container {
+  .movie-row {
     padding: 0 20px;
   }
-  
-  .scroll-btn {
-    display: none;
-  }
-  
-  .movies-list > * {
+
+  .movies-container > * {
     width: 150px;
+  }
+
+  .slider-btn {
+    display: none;
   }
 }
 </style>

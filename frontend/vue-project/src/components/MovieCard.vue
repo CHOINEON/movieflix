@@ -1,47 +1,44 @@
 <!-- frontend/src/components/MovieCard.vue -->
 
 <template>
-  <div class="movie-card" @click="handleClick">
-    <div class="poster-container">
+  <div class="movie-card" @click="handleCardClick">
+    <div class="movie-poster">
       <img 
         v-if="movie.poster_url" 
         :src="movie.poster_url" 
         :alt="movie.title"
-        class="poster"
-      />
+      >
       <div v-else class="no-poster">
-        <span>{{ movie.title }}</span>
+        <span>No Image</span>
       </div>
       
       <!-- 찜하기 버튼 -->
       <button 
-        v-if="showFavoriteButton"
         class="favorite-btn"
-        @click.stop="handleFavorite"
         :class="{ 'favorited': movie.is_favorited }"
+        @click.stop="toggleFavorite"
       >
-        {{ movie.is_favorited ? '❤️' : '🤍' }}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
       </button>
-      
-      <!-- 평점 -->
-      <div class="rating">
+
+      <!-- 평점 배지 -->
+      <div class="rating-badge">
         <span class="star">⭐</span>
-        <span>{{ movie.vote_average.toFixed(1) }}</span>
+        <span class="score">{{ movie.vote_average.toFixed(1) }}</span>
       </div>
     </div>
-    
-    <div class="info">
-      <h3 class="title">{{ movie.title }}</h3>
-      <p class="release-date" v-if="movie.release_date">
-        {{ formatDate(movie.release_date) }}
-      </p>
+
+    <div class="movie-info">
+      <h3 class="movie-title">{{ movie.title }}</h3>
+      <p class="movie-year">{{ releaseYear }}</p>
     </div>
   </div>
 </template>
 
 <script>
-import { useAuthStore } from '@/stores/authStore'
-import { movieAPI } from '@/api/movies'
+import { computed } from 'vue'
 
 export default {
   name: 'MovieCard',
@@ -49,47 +46,32 @@ export default {
     movie: {
       type: Object,
       required: true
-    },
-    showFavoriteButton: {
-      type: Boolean,
-      default: true
     }
   },
+  emits: ['movie-click', 'favorite-toggled'],
   setup(props, { emit }) {
-    const authStore = useAuthStore()
+    const releaseYear = computed(() => {
+      if (!props.movie.release_date) return ''
+      return new Date(props.movie.release_date).getFullYear()
+    })
 
-    const handleClick = () => {
-      emit('click', props.movie)
+    const handleCardClick = () => {
+      console.log('🎬 카드 클릭:', props.movie)
+      emit('movie-click', props.movie)
     }
 
-    const handleFavorite = async () => {
-      if (!authStore.isAuthenticated) {
-        alert('로그인이 필요합니다.')
-        return
-      }
-
-      try {
-        const response = await movieAPI.toggleFavorite(props.movie.id)
-        emit('favorite-toggled', {
-          movieId: props.movie.id,
-          isFavorited: response.data.is_favorited
-        })
-      } catch (error) {
-        console.error('찜하기 실패:', error)
-        alert('찜하기에 실패했습니다.')
-      }
-    }
-
-    const formatDate = (dateString) => {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.getFullYear() + '년'
+    const toggleFavorite = async () => {
+      console.log('❤️ 찜하기 토글:', props.movie.id)
+      emit('favorite-toggled', {
+        movieId: props.movie.id,
+        isFavorited: !props.movie.is_favorited
+      })
     }
 
     return {
-      handleClick,
-      handleFavorite,
-      formatDate
+      releaseYear,
+      handleCardClick,
+      toggleFavorite
     }
   }
 }
@@ -99,7 +81,7 @@ export default {
 .movie-card {
   cursor: pointer;
   transition: transform 0.3s ease;
-  flex-shrink: 0;
+  position: relative;
 }
 
 .movie-card:hover {
@@ -107,16 +89,16 @@ export default {
   z-index: 10;
 }
 
-.poster-container {
+.movie-poster {
   position: relative;
   width: 100%;
   aspect-ratio: 2/3;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
   background: #2a2a2a;
 }
 
-.poster {
+.movie-poster img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -128,46 +110,49 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 10px;
-  text-align: center;
-  font-weight: 600;
+  color: #666;
+  font-size: 14px;
 }
 
+/* 찜하기 버튼 */
 .favorite-btn {
   position: absolute;
   top: 8px;
   right: 8px;
   width: 36px;
   height: 36px;
+  background: rgba(0, 0, 0, 0.7);
   border: none;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  font-size: 20px;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  z-index: 5;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 2;
+}
+
+.movie-card:hover .favorite-btn {
+  opacity: 1;
+}
+
+.favorite-btn svg {
+  color: white;
+}
+
+.favorite-btn.favorited svg {
+  fill: #e50914;
+  color: #e50914;
 }
 
 .favorite-btn:hover {
-  transform: scale(1.1);
   background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
 }
 
-.favorite-btn.favorited {
-  animation: heartbeat 0.3s ease;
-}
-
-@keyframes heartbeat {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
-
-.rating {
+/* 평점 배지 */
+.rating-badge {
   position: absolute;
   bottom: 8px;
   left: 8px;
@@ -179,34 +164,34 @@ export default {
   gap: 4px;
   font-size: 14px;
   font-weight: 600;
-  color: white;
 }
 
 .star {
-  font-size: 16px;
+  font-size: 12px;
 }
 
-.info {
-  padding: 8px 4px;
+.score {
+  color: #ffd700;
 }
 
-.title {
+/* 영화 정보 */
+.movie-info {
+  padding: 12px 4px;
+}
+
+.movie-title {
   font-size: 14px;
   font-weight: 600;
   color: #e5e5e5;
   margin: 0 0 4px 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  line-height: 1.3;
-  min-height: 2.6em;
+  white-space: nowrap;
 }
 
-.release-date {
-  font-size: 12px;
-  color: #999;
+.movie-year {
+  font-size: 13px;
+  color: #808080;
   margin: 0;
 }
 </style>

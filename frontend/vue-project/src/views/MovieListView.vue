@@ -136,6 +136,14 @@
         />
       </div>
     </main>
+
+    <!-- 영화 상세 모달 -->
+    <MovieDetailModal
+      :show="showModal"
+      :tmdb-id="selectedMovieTmdbId"
+      @close="closeModal"
+      @favorite-toggled="handleFavoriteToggled"
+    />
   </div>
 </template>
 
@@ -144,11 +152,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { movieAPI } from '@/api/movies'
 import MovieRow from '@/components/MovieRow.vue'
+import MovieDetailModal from '@/components/MovieDetailModal.vue'
 
 export default {
   name: 'MovieListView',
   components: {
-    MovieRow
+    MovieRow,
+    MovieDetailModal
   },
   setup() {
     const authStore = useAuthStore()
@@ -166,6 +176,10 @@ export default {
 
     const showCategoryDropdown = ref(false)
     const showUserDropdown = ref(false)
+
+    // 모달 상태
+    const showModal = ref(false)
+    const selectedMovieTmdbId = ref(null)
 
     const categories = [
       { id: 'action', name: '액션' },
@@ -274,7 +288,14 @@ export default {
     }
 
     const handleMovieClick = (movie) => {
-      console.log('영화 클릭:', movie)
+      console.log('🎬 영화 클릭:', movie)
+      selectedMovieTmdbId.value = movie.tmdb_id
+      showModal.value = true
+    }
+
+    const closeModal = () => {
+      showModal.value = false
+      selectedMovieTmdbId.value = null
     }
 
     const handleFavoriteToggled = ({ movieId, isFavorited }) => {
@@ -311,6 +332,8 @@ export default {
       error,
       showCategoryDropdown,
       showUserDropdown,
+      showModal,
+      selectedMovieTmdbId,
       categories,
       popularMovies,
       actionMovies,
@@ -326,6 +349,7 @@ export default {
       handleLogout,
       loadMovies,
       handleMovieClick,
+      closeModal,
       handleFavoriteToggled
     }
   }
