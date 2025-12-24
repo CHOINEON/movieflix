@@ -39,7 +39,7 @@
               <iframe
                 :src="movie.trailer.youtube_url + '?autoplay=1&mute=1&controls=1'"
                 frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; compute-pressure"
                 allowfullscreen
               ></iframe>
             </div>
@@ -141,19 +141,45 @@
                 </div>
               </div>
             </div>
+
+            <!-- ⭐ 리뷰 섹션 -->
+            <ReviewList
+              ref="reviewList"
+              :movie-id="movie.id"
+              @open-review-modal="openReviewModal"
+              @edit-review="handleEditReview"
+            />
           </div>
         </div>
       </div>
     </div>
   </Transition>
+
+  <!-- ⭐ 리뷰 작성/수정 모달 -->
+  <ReviewModal
+    v-if="movie"
+    :show="showReviewModal"
+    :movie-id="movie.id"
+    :movie-title="movie.title"
+    :edit-review="editingReview"
+    @close="closeReviewModal"
+    @review-created="handleReviewCreated"
+    @review-updated="handleReviewUpdated"
+  />
 </template>
 
 <script>
 import { ref, computed, watch } from 'vue'
 import { movieAPI } from '@/api/movies'
+import ReviewModal from './ReviewModal.vue'
+import ReviewList from './ReviewList.vue'
 
 export default {
   name: 'MovieDetailModal',
+  components: {
+    ReviewModal,
+    ReviewList
+  },
   props: {
     show: {
       type: Boolean,
@@ -170,6 +196,12 @@ export default {
     const loading = ref(false)
     const error = ref(null)
 
+    // 리뷰 관련 ref
+    const showReviewModal = ref(false)
+    const reviewList = ref(null)
+    const editingReview = ref(null)  // ⭐ 추가: 수정할 리뷰
+
+    
     const releaseYear = computed(() => {
       if (!movie.value?.release_date) return ''
       return new Date(movie.value.release_date).getFullYear()
@@ -229,6 +261,55 @@ export default {
       }
     }
 
+    // ⭐ 리뷰 모달 열기 (새 리뷰 작성)
+    const openReviewModal = () => {
+      console.log('📝 리뷰 작성 모달 열기')
+      editingReview.value = null  // 새 리뷰 작성
+      showReviewModal.value = true
+    }
+
+    // ⭐ 리뷰 모달 닫기
+    const closeReviewModal = () => {
+      console.log('📝 리뷰 모달 닫기')
+      showReviewModal.value = false
+      editingReview.value = null  // 수정 모드 초기화
+    }
+
+    // ⭐ 리뷰 작성 완료 핸들러
+    const handleReviewCreated = (newReview) => {
+      console.log('✅ 새 리뷰 작성됨:', newReview)
+      
+      // ReviewList 컴포넌트에 새 리뷰 추가
+      if (reviewList.value) {
+        reviewList.value.addReview(newReview)
+      }
+      
+      // 리뷰 모달 닫기
+      showReviewModal.value = false
+      editingReview.value = null
+    }
+
+    // ⭐ 추가: 리뷰 수정 핸들러
+    const handleEditReview = (review) => {
+      console.log('✏️ 리뷰 수정 모드:', review)
+      editingReview.value = review
+      showReviewModal.value = true
+    }
+
+    // ⭐ 추가: 리뷰 수정 완료 핸들러
+    const handleReviewUpdated = (updatedReview) => {
+      console.log('✅ 리뷰 수정됨:', updatedReview)
+      
+      // ReviewList 컴포넌트에서 리뷰 업데이트
+      if (reviewList.value) {
+        reviewList.value.updateReview(updatedReview)
+      }
+      
+      // 리뷰 모달 닫기
+      showReviewModal.value = false
+      editingReview.value = null
+    }
+
     // tmdbId가 변경될 때마다 영화 정보 로드
     watch(() => props.tmdbId, (newId) => {
       if (newId && props.show) {
@@ -251,7 +332,16 @@ export default {
       castNames,
       directorNames,
       closeModal,
-      handleToggleFavorite
+      handleToggleFavorite,
+      // 리뷰 관련
+      showReviewModal,
+      reviewList,
+      editingReview,           // ⭐ 추가
+      openReviewModal,
+      closeReviewModal,
+      handleReviewCreated,
+      handleEditReview,        // ⭐ 추가
+      handleReviewUpdated      // ⭐ 추가
     }
   }
 }

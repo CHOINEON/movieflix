@@ -1,4 +1,4 @@
-# movies/urls.py
+# backend/movies/urls.py
 
 from django.urls import path
 from . import views
@@ -20,4 +20,9 @@ urlpatterns = [
     
     # 내가 찜한 영화
     path('favorites/', views.my_favorites, name='favorites'),
+    
+    # 리뷰 관련
+    path('<int:movie_id>/reviews/', views.movie_reviews, name='movie_reviews'),  # 리뷰 목록 / 작성
+    path('reviews/<int:review_id>/', views.review_detail, name='review_detail'),  # 리뷰 수정 / 삭제
+    path('reviews/<int:review_id>/like/', views.toggle_review_like, name='review_like'),  # 리뷰 좋아요
 ]

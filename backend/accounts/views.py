@@ -81,6 +81,7 @@ def user_signup(request):
     login(request, user)
     
     print(f"✅ 회원가입 성공: {username}")
+    print(f"✅ 세션 키: {request.session.session_key}")
 
     serializer = UserSerializer(user)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -116,7 +117,7 @@ def user_login(request):
         login(request, user)
         
         print(f"✅ 로그인 성공: {username}")
-        print(f"📋 세션 키: {request.session.session_key}")
+        print(f"✅ 세션 키: {request.session.session_key}")
         
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
