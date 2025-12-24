@@ -55,12 +55,12 @@
               
               <!-- 액션 버튼 -->
               <div class="action-buttons">
-                <button class="play-btn">
+                <!-- <button class="play-btn">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                   재생
-                </button>
+                </button> -->
                 
                 <button 
                   class="favorite-btn"

@@ -63,11 +63,20 @@
           v-for="favorite in favorites"
           :key="favorite.id"
           :movie="favorite.movie"
-          @click="handleMovieClick"
+          :show-favorite-button="false"
+          @movie-click="handleMovieClick"
           @favorite-toggled="handleFavoriteToggled"
         />
       </div>
     </main>
+
+    <!-- 영화 상세 모달 -->
+    <MovieDetailModal
+      :show="showDetailModal"
+      :tmdb-id="selectedMovieTmdbId"
+      @close="closeDetailModal"
+      @favorite-toggled="handleFavoriteToggled"
+    />
   </div>
 </template>
 
@@ -77,11 +86,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { movieAPI } from '@/api/movies'
 import MovieCard from '@/components/MovieCard.vue'
+import MovieDetailModal from '@/components/MovieDetailModal.vue'
 
 export default {
   name: 'FavoritesView',
   components: {
-    MovieCard
+    MovieCard,
+    MovieDetailModal
   },
   setup() {
     const router = useRouter()
@@ -92,6 +103,10 @@ export default {
     const error = ref(null)
     const showUserDropdown = ref(false)
     const favorites = ref([])
+
+    // 모달 관련 ref
+    const showDetailModal = ref(false)
+    const selectedMovieTmdbId = ref(null)
 
     const toggleUserDropdown = () => {
       showUserDropdown.value = !showUserDropdown.value
@@ -108,8 +123,9 @@ export default {
       try {
         const response = await movieAPI.getMyFavorites()
         favorites.value = response.data
+        console.log('✅ 찜한 영화 목록:', favorites.value)
       } catch (err) {
-        console.error('찜한 영화 로드 실패:', err)
+        console.error('❌ 찜한 영화 로드 실패:', err)
         error.value = '찜한 영화를 불러오는데 실패했습니다.'
       } finally {
         loading.value = false
@@ -117,15 +133,25 @@ export default {
     }
 
     const handleMovieClick = (movie) => {
-      console.log('영화 클릭:', movie)
+      console.log('🎬 영화 클릭:', movie)
+      selectedMovieTmdbId.value = movie.tmdb_id
+      showDetailModal.value = true
+    }
+
+    const closeDetailModal = () => {
+      showDetailModal.value = false
+      selectedMovieTmdbId.value = null
     }
 
     const handleFavoriteToggled = ({ movieId, isFavorited }) => {
+      console.log('❤️ 찜하기 토글:', { movieId, isFavorited })
+      
       if (!isFavorited) {
         // 찜 취소된 경우 목록에서 제거
         favorites.value = favorites.value.filter(
           fav => fav.movie.id !== movieId
         )
+        console.log('🗑️ 목록에서 제거됨:', movieId)
       }
     }
 
@@ -139,10 +165,13 @@ export default {
       error,
       showUserDropdown,
       favorites,
+      showDetailModal,
+      selectedMovieTmdbId,
       toggleUserDropdown,
       handleLogout,
       loadFavorites,
       handleMovieClick,
+      closeDetailModal,
       handleFavoriteToggled
     }
   }
