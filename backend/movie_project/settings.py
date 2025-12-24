@@ -142,6 +142,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 커스텀 유저 모델 설정 (중요!)
 AUTH_USER_MODEL = 'accounts.User'
 
+CORS_ALLOW_CREDENTIALS = True
 # CORS 설정 (Vue와 통신하기 위해 필요)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",    # Vite 개발 서버
@@ -150,8 +151,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 
-# 쿠키를 포함한 요청 허용
-CORS_ALLOW_CREDENTIALS = True
+# # 쿠키를 포함한 요청 허용
+# CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -193,4 +194,13 @@ REST_FRAMEWORK = {
     ],
 }
 
-TMDB_API_KEY = '008685daf00a4e688853665e94765f9d'
+import os 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TMDB_API_KEY = os.getenv('TMDB_API_KEY', '')
+
+# GMS (Gen AI Management System) API Settings
+GMS_API_KEY = os.getenv('GMS_API_KEY', '')
+GMS_BASE_URL = os.getenv('GMS_BASE_URL', 'https://gms.ssafy.io/gmsapi/anthropic/')
