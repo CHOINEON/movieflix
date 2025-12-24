@@ -20,4 +20,8 @@ urlpatterns = [
     
     # 내가 찜한 영화
     path('favorites/', views.my_favorites, name='favorites'),
+
+    # AI 챗봇 영화
+    path('ai-chat/', views.ai_chat, name='ai_chat'),
 ]
+

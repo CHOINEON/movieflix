@@ -16,7 +16,8 @@ from .tmdb_api import (
     get_movie_credits,
     GENRE_MAP
 )
-
+from django.conf import settings
+import json
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -280,3 +281,128 @@ def my_favorites(request):
     serializer = FavoriteSerializer(favorites, many=True)
     
     return Response(serializer.data)
+
+
+
+@csrf_exempt
+@api_view(['POST'])
+def ai_chat(request):
+    """
+    AI 챗봇과 대화하며 영화 추천받기
+    
+    """
+    print("=" * 80)
+    print("🚀 [ai_chat] 함수 호출됨!")
+    print(f"👤 [ai_chat] 사용자: {request.user}")
+    print(f"🔐 [ai_chat] 인증 여부: {request.user.is_authenticated}")
+    print("=" * 80)
+    
+    # 수동으로 인증 확인
+    if not request.user.is_authenticated:
+        print("❌ [ai_chat] 인증되지 않은 사용자")
+        return Response(
+            {'error': '로그인이 필요합니다.'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    user_message = request.data.get('message', '')
+    print(f"📝 [ai_chat] 받은 메시지: '{user_message}'")
+
+    if not user_message:
+        print("❌ [ai_chat] 메시지가 비어있음")
+        return Response(
+            {'error': '메시지를 입력해주세요.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        print("🔧 [ai_chat] Anthropic 클라이언트 초기화 시작")
+        from anthropic import Anthropic
+
+        # GMS API 키 확인
+        api_key = settings.GMS_API_KEY
+        print(f"🔑 [ai_chat] API 키 존재: {bool(api_key)}")
+        
+        if not api_key:
+            print("❌ [ai_chat] API 키 없음")
+            return Response(
+                {'error': 'GMS API 키가 설정되지 않았습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        print(f"🌐 [ai_chat] GMS URL: {settings.GMS_BASE_URL}")
+        client = Anthropic(
+            api_key=api_key,
+            base_url=settings.GMS_BASE_URL
+        )
+        print("✅ [ai_chat] 클라이언트 초기화 완료")
+
+        # 사용자 컨텍스트 수집
+        user = request.user
+        favorites = user.favorites.select_related('movie').all()[:10]
+        print(f"🎬 [ai_chat] 찜한 영화: {favorites.count()}개")
+
+        favorite_movies_text = ""
+        if favorites:
+            favorite_list = [
+                f"- {fav.movie.title} ({fav.movie.release_date.year if fav.movie.release_date else 'N/A'})"
+                for fav in favorites
+            ]
+            favorite_movies_text = "\n".join(favorite_list)
+        else:
+            favorite_movies_text = "아직 찜한 영화가 없습니다."
+        
+        system_prompt = f"""당신은 피곤하고 전문적인 영화 추천 AI 어시스턴트입니다.
+
+**사용자 정보:**
+- 사용자 이름: {user.username}
+- 찜한 영화 목록:
+{favorite_movies_text}
+
+**역할:**
+- 사용자의 영화 취향을 파악하여 맞춤 추천을 제공합니다
+- 영화에 대한 질문에 까칠하지만 츤데레 선배처럼 상세하게 답변합니다
+- 구체적인 이유와 함께 영화를 추천합니다
+- 한국어로 자연스럽게 대화합니다
+
+**가이드라인:**
+- 찜한 영화 목록을 참고하여 취향을 고려한 추천을 합니다
+- 영화 제목은 **굵게** 표시합니다
+- 추천 시 장르, 감독, 주연배우 등을 언급합니다
+- 간결하면서도 유용한 정보를 제공합니다
+- 3개의 영화를 추천합니다"""
+        
+        print("🤖 [ai_chat] Claude API 호출 시작")
+        message = client.messages.create(
+            model="claude-3-7-sonnet-latest",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ]
+        )
+        
+        print("✅ [ai_chat] Claude 응답 받음")
+        ai_response = message.content[0].text
+        print(f"💬 [ai_chat] 응답 길이: {len(ai_response)}자")
+        
+        return Response({
+            'response': ai_response,
+            'user_message': user_message
+        })
+        
+    except Exception as e:
+        import traceback
+        print("=" * 80)
+        print("❌ [ai_chat] 오류 발생")
+        print(f"오류: {str(e)}")
+        print(traceback.format_exc())
+        print("=" * 80)
+        
+        return Response(
+            {'error': f'AI 서비스 오류: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
