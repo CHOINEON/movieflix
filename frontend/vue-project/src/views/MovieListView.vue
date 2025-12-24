@@ -30,6 +30,11 @@
           <router-link to="/favorites" class="nav-link">
             내가 찜한 리스트
           </router-link>
+
+          <router-link to="/chatbot" class="nav-link">
+            Claude가 말아주는 영화추천
+          </router-link>
+
         </div>
       </div>
       
