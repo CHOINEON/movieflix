@@ -6,6 +6,7 @@ import HomePage from '@/views/HomePage.vue'
 import SignupPage from '@/views/SignupPage.vue'
 import MovieListView from '@/views/MovieListView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
+import ChatbotView from  '@/views/ChatbotView.vue'
 
 const routes = [
   {
@@ -30,6 +31,12 @@ const routes = [
     path: '/favorites',
     name: 'favorites',
     component: FavoritesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/chatbot',
+    name: 'chatbot',
+    component: ChatbotView,
     meta: { requiresAuth: true }
   }
 ]
