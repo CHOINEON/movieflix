@@ -211,3 +211,47 @@ TMDB_API_KEY = os.getenv('TMDB_API_KEY', '')
 # GMS (Gen AI Management System) API Settings
 GMS_API_KEY = os.getenv('GMS_API_KEY', '')
 GMS_BASE_URL = os.getenv('GMS_BASE_URL', 'https://gms.ssafy.io/gmsapi/anthropic/')
+
+# PythonAnywhere 배포 시 추가 설정
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+# PythonAnywhere 도메인 추가
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.pythonanywhere.com',  # PythonAnywhere 도메인 허용
+]
+
+# CORS 설정 (Vue 프론트엔드 연동)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # 로컬 개발
+    "http://localhost:8080",
+    "https://your-app.vercel.app",  # Vercel 배포 후 실제 도메인으로 변경
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Media files (사용자 업로드 파일)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Database
+# SQLite 경로 명시적 설정
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# CSRF 설정
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.pythonanywhere.com',
+]
