@@ -12,7 +12,7 @@ export default {
 
 <style>
 * {
-  background-color: black;
+  /* background-color: black; */
   margin: 0;
   padding: 0;
   box-sizing: border-box;
