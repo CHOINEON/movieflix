@@ -35,7 +35,6 @@
 ![TMDB](https://img.shields.io/badge/TMDB-01B4E4?style=for-the-badge&logo=themoviedatabase&logoColor=white)
 
 <br>
-
 ## 📂 프로젝트 구조
 
 ```
@@ -64,34 +63,77 @@ final-pjt/
 ## 🗄️ ERD (Entity Relationship Diagram)
 
 ```
-┌─────────────┐         ┌─────────────┐         ┌─────────────┐
-│    User     │         │    Movie    │         │    Actor    │
-├─────────────┤         ├─────────────┤         ├─────────────┤
-│ id          │         │ id          │         │ id          │
-│ username    │◄───┐    │ tmdb_id     │◄───┐    │ name        │
-│ email       │    │    │ title       │    │    └─────────────┘
-│ nickname    │    │    │ overview    │    │           │
-└─────────────┘    │    │ poster_path │    │           │
-       │           │    │ release_date│    │    ┌──────▼──────┐
-       │           │    │ vote_average│    │    │ MovieActor  │
-       │           │    └─────────────┘    │    │  (N:M)      │
-       │           │           │           │    └─────────────┘
-       │           │           │           │
-       │      ┌────▼─────┐     │      ┌────▼────────┐
-       │      │ Favorite │     │      │   Review    │
-       │      │   (N:M)  │     │      ├─────────────┤
-       │      └──────────┘     │      │ id          │
-       │                       │      │ content     │
-       │                       │      │ rating      │
-       │                       └──────┤ is_spoiler  │
-       │                              │ created_at  │
-       │                              └─────────────┘
-       │                                     │
-       │                              ┌──────▼──────┐
-       └──────────────────────────────┤ ReviewLike  │
-                                      │   (N:M)     │
-                                      └─────────────┘
+┌──────────────────────┐
+│        User          │
+│  (AUTH_USER_MODEL)   │
+├──────────────────────┤
+│ id (PK)              │
+│ username             │
+│ email                │
+│ nickname             │
+│ profile_image        │
+└──────────────────────┘
+         │
+         │ 1
+         │
+         ├─────────────┬─────────────┬─────────────┐
+         │             │             │             │
+         │ N           │ N           │ N           │ N
+         ▼             ▼             ▼             ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   Favorite   │  │    Review    │  │  ReviewLike  │  │    Follow    │
+├──────────────┤  ├──────────────┤  ├──────────────┤  ├──────────────┤
+│ id (PK)      │  │ id (PK)      │  │ id (PK)      │  │ id (PK)      │
+│ user_id (FK) │  │ user_id (FK) │  │ user_id (FK) │  │ follower_id  │
+│ movie_id (FK)│  │ movie_id (FK)│  │ review_id(FK)│  │ following_id │
+│ created_at   │  │ rating (1-5) │  │ created_at   │  │ created_at   │
+└──────────────┘  │ content      │  └──────────────┘  └──────────────┘
+         │        │ is_spoiler   │          │
+         │        │ created_at   │          │
+         │        │ updated_at   │          │
+         │        └──────────────┘          │
+         │               │                  │
+         │ N             │ N                │ N
+         │               │                  │
+         ├───────────────┴──────────────────┘
+         │ 1
+         ▼
+┌──────────────────────────────────┐
+│            Movie                 │
+├──────────────────────────────────┤
+│ id (PK)                          │
+│ tmdb_id (unique)                 │
+│ title                            │
+│ original_title                   │
+│ overview                         │
+│ poster_path                      │
+│ backdrop_path                    │
+│ release_date                     │
+│ vote_average                     │
+│ vote_count                       │
+│ popularity                       │
+│ adult                            │
+│ genre_ids (JSON)                 │
+│ created_at                       │
+│ updated_at                       │
+└──────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│          관계 (Relationships)            │
+├─────────────────────────────────────────┤
+│ • User ─(1:N)─ Favorite ─(N:1)─ Movie  │
+│ • User ─(1:N)─ Review ─(N:1)─ Movie    │
+│ • User ─(1:N)─ ReviewLike ─(N:1)─ Rev. │
+│ • User ─(N:M)─ Follow (self-reference) │
+│                                         │
+│ Unique Constraints:                     │
+│ • (user, movie) in Favorite             │
+│ • (user, movie) in Review               │
+│ • (user, review) in ReviewLike          │
+│ • (follower, following) in Follow       │
+└─────────────────────────────────────────┘
 ```
+
 
 <br>
 
