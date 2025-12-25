@@ -1,6 +1,7 @@
 <!-- frontend/src/views/ChatbotView.vue -->
 
 <template>
+  <div class="background">
   <div class="chatbot-container">
     <div class="chat-header">
       <h2>🎬 AI 영화 추천</h2>
@@ -48,7 +49,7 @@
         전송
       </button>
     </div>
-  </div>
+  </div></div>
 </template>
 
 <script setup>
@@ -116,13 +117,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.background {
+  background :rgba(0, 0, 0, 0.2);
+}
+
 .chatbot-container {
   max-width: 800px;
   margin: 2rem auto;
   height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
-  background: #1a1a1a;
+  background: #181818;
   border-radius: 12px;
   overflow: hidden;
 }
