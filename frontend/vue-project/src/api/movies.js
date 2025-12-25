@@ -26,5 +26,32 @@ export const movieAPI = {
   // 내가 찜한 영화
   getMyFavorites() {
     return axios.get('/movies/favorites/')
+  },
+
+  // ==================== 리뷰 API ====================
+
+  // 영화 리뷰 목록 조회
+  getMovieReviews(movieId) {
+    return axios.get(`/movies/${movieId}/reviews/`)
+  },
+
+  // 리뷰 작성
+  createReview(movieId, reviewData) {
+    return axios.post(`/movies/${movieId}/reviews/`, reviewData)
+  },
+
+  // 리뷰 수정
+  updateReview(reviewId, reviewData) {
+    return axios.put(`/movies/reviews/${reviewId}/`, reviewData)
+  },
+
+  // 리뷰 삭제
+  deleteReview(reviewId) {
+    return axios.delete(`/movies/reviews/${reviewId}/`)
+  },
+
+  // 리뷰 좋아요 토글
+  toggleReviewLike(reviewId) {
+    return axios.post(`/movies/reviews/${reviewId}/like/`)
   }
 }

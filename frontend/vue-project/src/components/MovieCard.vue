@@ -12,11 +12,12 @@
         <span>No Image</span>
       </div>
       
-      <!-- 찜하기 버튼 -->
+      <!-- 찜하기 버튼 (showFavoriteButton이 true일 때만 표시) -->
       <button 
+        v-if="showFavoriteButton"
         class="favorite-btn"
         :class="{ 'favorited': movie.is_favorited }"
-        @click.stop="toggleFavorite"
+        @click.stop="handleToggleFavorite"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -39,6 +40,8 @@
 
 <script>
 import { computed } from 'vue'
+import { useAuthStore } from '@/stores/authStore'
+import { movieAPI } from '@/api/movies'
 
 export default {
   name: 'MovieCard',
@@ -46,10 +49,16 @@ export default {
     movie: {
       type: Object,
       required: true
+    },
+    showFavoriteButton: {
+      type: Boolean,
+      default: true  // 기본값은 true (하트 버튼 표시)
     }
   },
   emits: ['movie-click', 'favorite-toggled'],
   setup(props, { emit }) {
+    const authStore = useAuthStore()
+
     const releaseYear = computed(() => {
       if (!props.movie.release_date) return ''
       return new Date(props.movie.release_date).getFullYear()
@@ -60,18 +69,37 @@ export default {
       emit('movie-click', props.movie)
     }
 
-    const toggleFavorite = async () => {
-      console.log('❤️ 찜하기 토글:', props.movie.id)
-      emit('favorite-toggled', {
-        movieId: props.movie.id,
-        isFavorited: !props.movie.is_favorited
-      })
+    const handleToggleFavorite = async () => {
+      // 로그인 확인
+      if (!authStore.isAuthenticated) {
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+      try {
+        console.log('❤️ 찜하기 토글:', props.movie.id, props.movie.title)
+        
+        // API 호출
+        const response = await movieAPI.toggleFavorite(props.movie.id)
+        
+        console.log('✅ 찜하기 응답:', response.data)
+        
+        // 부모 컴포넌트에 이벤트 전달
+        emit('favorite-toggled', {
+          movieId: props.movie.id,
+          isFavorited: response.data.is_favorited
+        })
+        
+      } catch (err) {
+        console.error('❌ 찜하기 실패:', err)
+        alert('찜하기에 실패했습니다.')
+      }
     }
 
     return {
       releaseYear,
       handleCardClick,
-      toggleFavorite
+      handleToggleFavorite,
     }
   }
 }
@@ -134,6 +162,10 @@ export default {
 }
 
 .movie-card:hover .favorite-btn {
+  opacity: 1;
+}
+
+.favorite-btn.favorited {
   opacity: 1;
 }
 

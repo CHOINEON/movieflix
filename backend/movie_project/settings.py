@@ -174,15 +174,22 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 
-# 세션 쿠키 설정
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = False  # 개발 환경에서는 False, 배포 시 True
+# 세션 설정
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # 추가!
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_AGE = 1209600  # 2주
+SESSION_SAVE_EVERY_REQUEST = False
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # None에서 Lax로 변경!
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_DOMAIN = None
 
-# CSRF 쿠키 설정
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False  # 개발 환경에서는 False, 배포 시 True
-CSRF_COOKIE_HTTPONLY = False  # False로 해야 JavaScript에서 접근 가능!
+# CSRF 설정
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'  # None에서 Lax로 변경!
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_DOMAIN = None
 
 # REST Framework 설정
 REST_FRAMEWORK = {
