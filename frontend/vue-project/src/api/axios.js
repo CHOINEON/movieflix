@@ -2,13 +2,16 @@
 
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
 const instance = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: `${API_BASE_URL}/api`,  // 환경변수 사용
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
 
 // CSRF 토큰 가져오기 함수
 function getCookie(name) {
