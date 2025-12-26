@@ -8,9 +8,18 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
+
+=== 프로덕션 배포 준비 완료 ===
+- 로컬 개발: SQLite + DEBUG=True
+- Railway 배포: PostgreSQL + DEBUG=False (환경변수로 자동 전환)
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# 환경변수 로드 (로컬 개발용 .env 파일)
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +29,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-i!nd6%-0lfco!h*8$$brq%itgli9bnr^ro-hlsgaa%!mt8n34k'
+# 환경변수에서 SECRET_KEY를 가져옴 (프로덕션에서는 Railway Variables에서 설정)
+# 로컬 개발: .env 파일의 SECRET_KEY 사용
+# Railway 배포: Railway Variables의 SECRET_KEY 사용
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-i!nd6%-0lfco!h*8$$brq%itgli9bnr^ro-hlsgaa%!mt8n34k')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# 환경변수에서 DEBUG 설정을 가져옴
+# 로컬 개발: DEBUG=True (또는 .env에서 설정)
+# Railway 배포: DEBUG=False (Railway Variables에서 설정)
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+# 허용된 호스트 설정
+# 로컬 개발: localhost, 127.0.0.1
+# Railway 배포: *.railway.app 및 커스텀 도메인
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -38,18 +56,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Third party apps (여기에 추가!)
+    # Third party apps
     'rest_framework',
     'corsheaders',
     
-    # Local apps (여기에 추가!)
+    # Local apps
     'accounts',
     'movies',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # 맨 위에 추가!
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ 추가: Static 파일 서빙 (프로덕션용)
+    'corsheaders.middleware.CorsMiddleware',  # CORS 처리
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -67,6 +86,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',  # ✅ 추가
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -81,11 +101,17 @@ WSGI_APPLICATION = 'movie_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# ✅ 수정: 환경변수 기반 데이터베이스 설정
+# 로컬 개발: SQLite 사용 (DATABASE_URL 없으면 자동)
+# Railway 배포: PostgreSQL 사용 (Railway가 DATABASE_URL 자동 생성)
+import dj_database_url  # ✅ 추가: requirements.txt에 dj-database-url 필요
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
+        conn_max_age=600,  # 연결 풀링 (600초)
+        conn_health_checks=True,  # 연결 상태 체크
+    )
 }
 
 
@@ -111,9 +137,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'ko-kr'  # 한국어로 변경
+LANGUAGE_CODE = 'ko-kr'
 
-TIME_ZONE = 'Asia/Seoul'  # 서울 시간대로 변경
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -123,7 +149,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # ✅ 추가: collectstatic 결과물 저장 위치
+
+# ✅ 추가: WhiteNoise를 사용한 정적 파일 압축 및 캐싱 (프로덕션용)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (업로드된 이미지 등)
 MEDIA_URL = '/media/'
@@ -136,23 +166,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # ==========================================
-# 여기서부터 새로 추가된 설정들!
+# 커스텀 설정
 # ==========================================
 
-# 커스텀 유저 모델 설정 (중요!)
+# 커스텀 유저 모델 설정
 AUTH_USER_MODEL = 'accounts.User'
 
-CORS_ALLOW_CREDENTIALS = True
-# CORS 설정 (Vue와 통신하기 위해 필요)
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",    # Vite 개발 서버
-    "http://127.0.0.1:5173",
-    "http://localhost:8080",    # Vue CLI
-    "http://127.0.0.1:8080",
-]
 
-# # 쿠키를 포함한 요청 허용
-# CORS_ALLOW_CREDENTIALS = True
+# ==========================================
+# CORS 설정 (환경별 자동 전환)
+# ==========================================
+
+# 환경변수에서 CORS 허용 오리진을 가져옴
+# 로컬 개발: http://localhost:5173 등
+# Railway 배포: https://your-frontend.up.railway.app
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080'
+).split(',')
+
+# 쿠키를 포함한 요청 허용
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -166,32 +200,53 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# CSRF 설정
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-]
+# ✅ 추가: 개발 중에만 모든 origin 허용 (프로덕션에서는 비활성화)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # 로컬 개발 편의성
 
+
+# ==========================================
+# CSRF 설정
+# ==========================================
+
+# CSRF 신뢰 오리진 (환경변수 기반)
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080'
+).split(',')
+
+# ✅ 추가: Railway 배포 시 HTTPS 도메인도 자동 추가
+if not DEBUG:
+    # 프로덕션 환경에서는 ALLOWED_HOSTS의 도메인을 CSRF_TRUSTED_ORIGINS에 추가
+    for host in ALLOWED_HOSTS:
+        if host not in ['localhost', '127.0.0.1']:
+            CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
+
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = not DEBUG  # ✅ 수정: 프로덕션에서는 True, 개발에서는 False
+CSRF_COOKIE_DOMAIN = None
+
+
+# ==========================================
 # 세션 설정
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # 추가!
+# ==========================================
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_AGE = 1209600  # 2주
 SESSION_SAVE_EVERY_REQUEST = False
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'  # None에서 Lax로 변경!
-SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = not DEBUG  # ✅ 수정: 프로덕션에서는 True, 개발에서는 False
 SESSION_COOKIE_DOMAIN = None
 
-# CSRF 설정
-CSRF_COOKIE_NAME = 'csrftoken'
-CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = 'Lax'  # None에서 Lax로 변경!
-CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_DOMAIN = None
 
+# ==========================================
 # REST Framework 설정
+# ==========================================
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
@@ -199,15 +254,96 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
+    # ✅ 추가: 페이지네이션 설정 (선택사항)
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
 }
 
-import os 
-from dotenv import load_dotenv
 
-load_dotenv()
+# ==========================================
+# External API 설정
+# ==========================================
 
+# TMDB API 설정
 TMDB_API_KEY = os.getenv('TMDB_API_KEY', '')
 
 # GMS (Gen AI Management System) API Settings
 GMS_API_KEY = os.getenv('GMS_API_KEY', '')
 GMS_BASE_URL = os.getenv('GMS_BASE_URL', 'https://gms.ssafy.io/gmsapi/anthropic/')
+
+
+# ==========================================
+# 보안 설정 (프로덕션 환경에서만 활성화)
+# ==========================================
+
+if not DEBUG:
+    # HTTPS 강제 리다이렉트
+    SECURE_SSL_REDIRECT = True
+    
+    # 세션 및 CSRF 쿠키 보안 강화
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # HSTS (HTTP Strict Transport Security) 설정
+    SECURE_HSTS_SECONDS = 31536000  # 1년
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # X-Content-Type-Options 헤더
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    
+    # X-Frame-Options 헤더
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Referrer Policy
+    SECURE_REFERRER_POLICY = 'same-origin'
+
+
+# ==========================================
+# 로깅 설정 (프로덕션 디버깅용)
+# ==========================================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO' if not DEBUG else 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
+# ==========================================
+# 환경 설정 요약 (디버깅용)
+# ==========================================
+
+if DEBUG:
+    print(f"""
+    ========================================
+    Django 개발 서버 시작
+    ========================================
+    DEBUG: {DEBUG}
+    DATABASE: {'SQLite' if 'sqlite' in DATABASES['default']['ENGINE'] or 'sqlite' in DATABASES['default'].get('NAME', '') else 'PostgreSQL'}
+    ALLOWED_HOSTS: {ALLOWED_HOSTS}
+    CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}
+    ========================================
+    """)
